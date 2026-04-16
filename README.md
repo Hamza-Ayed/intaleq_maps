@@ -52,7 +52,7 @@ final routeData = await controller.getRoute(
 
 ## Documentation
 
-For full documentation and API reference, visit [intaleqapp.com](https://intaleqapp.com).
+For full documentation and API reference, visit the [Intaleq Documentation](https://map-dashbord.intaleqapp.com/dashboard.html#docs).
 
 ## License
 
