@@ -1,5 +1,4 @@
 import 'dart:typed_data' show Uint8List;
-import 'dart:ui' show Offset;
 
 /// Defines a bitmap image for use as a [Marker] icon.
 ///
@@ -9,7 +8,6 @@ class InlqBitmap {
   const InlqBitmap._({
     required this.mapLibreImageId,
     this.size,
-    this.offset,
     this.bytes,
     this.assetName,
   });
@@ -20,8 +18,6 @@ class InlqBitmap {
   /// Optional size multiplier (MapLibre iconSize).
   final double? size;
 
-  /// Optional pixel offset from the anchor point.
-  final Offset? offset;
 
   /// Raw PNG/JPEG bytes (used with [fromBytes]).
   final Uint8List? bytes;

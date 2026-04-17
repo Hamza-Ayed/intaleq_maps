@@ -64,7 +64,7 @@ class IntaleqMap extends StatefulWidget {
   final String apiKey;
 
   /// Starting camera position (target + zoom).
-  final mgl.CameraPosition initialCameraPosition;
+  final CameraPosition initialCameraPosition;
 
   // ── Map style ──────────────────────────────────────────────
 
@@ -152,7 +152,7 @@ class _IntaleqMapState extends State<IntaleqMap> {
     };
   }
 
-  Future<void> _onMapCreated(mgl.MaplibreMapController rawCtrl) async {
+  Future<void> _onMapCreated(mgl.MapLibreMapController rawCtrl) async {
     // Wire up tap routing before handing the controller to the caller.
     rawCtrl.onSymbolTapped.add(_onSymbolTapped);
     rawCtrl.onLineTapped.add(_onLineTapped);
@@ -181,7 +181,7 @@ class _IntaleqMapState extends State<IntaleqMap> {
   Widget build(BuildContext context) {
     return mgl.MaplibreMap(
       styleString: _resolvedStyleUrl,
-      initialCameraPosition: widget.initialCameraPosition,
+      initialCameraPosition: widget.initialCameraPosition.toMapLibre(),
       onMapCreated: _onMapCreated,
       onMapClick: widget.onTap != null
           ? (point, latlng) => widget.onTap!(latlng)
@@ -193,9 +193,9 @@ class _IntaleqMapState extends State<IntaleqMap> {
       onCameraTrackingChanged: null,
       myLocationEnabled: widget.myLocationEnabled,
       myLocationRenderMode: widget.myLocationEnabled
-          ? mgl.MyLocationRenderMode.NORMAL
-          : mgl.MyLocationRenderMode.NORMAL,
-      myLocationTrackingMode: mgl.MyLocationTrackingMode.None,
+          ? mgl.MyLocationRenderMode.normal
+          : mgl.MyLocationRenderMode.normal,
+      myLocationTrackingMode: mgl.MyLocationTrackingMode.none,
       compassEnabled: widget.compassEnabled,
       rotateGesturesEnabled: widget.rotateGesturesEnabled,
       scrollGesturesEnabled: widget.scrollGesturesEnabled,
@@ -209,6 +209,9 @@ class _IntaleqMapState extends State<IntaleqMap> {
           ? mgl.CameraTargetBounds(widget.cameraTargetBounds.bounds!)
           : mgl.CameraTargetBounds.unbounded,
       trackCameraPosition: widget.onCameraMove != null,
+      onCameraMove: widget.onCameraMove != null
+          ? (pos) => widget.onCameraMove!(CameraPosition.fromMapLibre(pos))
+          : null,
       onCameraTrackingDismissed: null,
     );
   }

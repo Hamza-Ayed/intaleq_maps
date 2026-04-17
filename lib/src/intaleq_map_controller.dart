@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:maplibre_gl/maplibre_gl.dart' as mgl;
 import 'models/geometry.dart';
 import 'models/bitmap.dart';
+import 'models/types.dart';
 
 /// Controls a live [IntaleqMap] widget.
 ///
@@ -13,12 +14,12 @@ import 'models/bitmap.dart';
 /// This API mirrors [GoogleMapController] from `google_maps_flutter`.
 class IntaleqMapController {
   IntaleqMapController._({
-    required mgl.MaplibreMapController raw,
+    required mgl.MapLibreMapController raw,
     required String apiKey,
   })  : _raw = raw,
         _apiKey = apiKey;
 
-  final mgl.MaplibreMapController _raw;
+  final mgl.MapLibreMapController _raw;
   final String _apiKey;
 
   // ── Internal object registries ─────────────────────────────
@@ -42,7 +43,7 @@ class IntaleqMapController {
   // ── Factory / init ─────────────────────────────────────────
 
   static Future<IntaleqMapController> create({
-    required mgl.MaplibreMapController raw,
+    required mgl.MapLibreMapController raw,
     required String apiKey,
   }) async {
     final ctrl = IntaleqMapController._(raw: raw, apiKey: apiKey);
@@ -70,8 +71,10 @@ class IntaleqMapController {
   /// Instantly moves the camera to the given [update].
   Future<bool?> moveCamera(mgl.CameraUpdate update) => _raw.moveCamera(update);
 
-  /// Returns the current [mgl.CameraPosition] of the map.
-  mgl.CameraPosition? get cameraPosition => _raw.cameraPosition;
+  /// Returns the current [CameraPosition] of the map.
+  CameraPosition? get cameraPosition => _raw.cameraPosition != null
+      ? CameraPosition.fromMapLibre(_raw.cameraPosition!)
+      : null;
 
   /// Returns the current zoom level.
   Future<double> getZoomLevel() async => _raw.cameraPosition?.zoom ?? 14.0;
@@ -295,9 +298,9 @@ class IntaleqMapController {
 
   /// Searches for places using the Intaleq Geocoding API.
   Future<List<dynamic>> searchPlaces(String query) async {
-    final uri = Uri.https('map-saas.intaleq.com', '/v1/geocoding/search', {
+    final uri = Uri.https('map-saas.intaleqapp.com', '/api/geocoding/search', {
       'q': query,
-      'key': _apiKey,
+      'api_key': _apiKey,
     });
     final res = await http.get(uri);
     if (res.statusCode == 200) return jsonDecode(res.body) as List<dynamic>;
@@ -306,10 +309,10 @@ class IntaleqMapController {
 
   /// Reverse geocodes a [LatLng] to a place description.
   Future<Map<String, dynamic>> reverseGeocode(mgl.LatLng position) async {
-    final uri = Uri.https('map-saas.intaleq.com', '/v1/geocoding/reverse', {
+    final uri = Uri.https('map-saas.intaleqapp.com', '/api/geocoding/reverse', {
       'lat': position.latitude.toString(),
       'lng': position.longitude.toString(),
-      'key': _apiKey,
+      'api_key': _apiKey,
     });
     final res = await http.get(uri);
     if (res.statusCode == 200)
@@ -326,11 +329,13 @@ class IntaleqMapController {
     mgl.LatLng destination, {
     String profile = 'driving',
   }) async {
-    final uri = Uri.https('map-saas.intaleq.com', '/v1/routing/route', {
-      'start': '${origin.longitude},${origin.latitude}',
-      'end': '${destination.longitude},${destination.latitude}',
+    final uri = Uri.https('map-saas.intaleqapp.com', '/api/maps/route', {
+      'fromLat': origin.latitude.toString(),
+      'fromLng': origin.longitude.toString(),
+      'toLat': destination.latitude.toString(),
+      'toLng': destination.longitude.toString(),
       'profile': profile,
-      'key': _apiKey,
+      'api_key': _apiKey,
     });
     final res = await http.get(uri);
     if (res.statusCode == 200)

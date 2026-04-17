@@ -1,3 +1,10 @@
+## 2.1.0
+
+* Fixed static analysis warnings (unused imports and variables).
+* Added comprehensive documentation for core SDK elements.
+* Improved API parity with Google Maps Flutter (CameraPosition helpers).
+* Added an `example/` project demonstrating SDK integration.
+
 ## 2.0.0
 
 **Breaking redesign — full Google Maps Flutter API parity.**
