@@ -5,7 +5,7 @@
   "packages": [
     {
       "name": "intaleq_maps",
-      "version": "2.1.2",
+      "version": "2.1.3",
       "dependencies": [
         "flutter",
         "http",
@@ -15,6 +15,11 @@
         "flutter_test",
         "lints"
       ]
+    },
+    {
+      "name": "lints",
+      "version": "5.1.1",
+      "dependencies": []
     },
     {
       "name": "flutter_test",
@@ -323,11 +328,6 @@
     {
       "name": "ffi",
       "version": "2.2.0",
-      "dependencies": []
-    },
-    {
-      "name": "lints",
-      "version": "5.1.1",
       "dependencies": []
     }
   ],

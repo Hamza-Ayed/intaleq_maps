@@ -1,3 +1,8 @@
+## 2.1.3
+
+* Fixed missing `dart:ui` import in `types.dart`.
+* Verified compatibility with Flutter 3.22.
+
 ## 2.1.2
 
 * Updated dependencies to latest stable versions (`http`, `lints`, `meta`).
