@@ -1,3 +1,9 @@
+## 2.1.1
+
+* Finalized static analysis and documentation fixes for maximum pub.dev score.
+* Renamed deprecated MapLibre components to latest naming conventions.
+* Fixed deprecated Color member usage.
+
 ## 2.1.0
 
 * Fixed static analysis warnings (unused imports and variables).
