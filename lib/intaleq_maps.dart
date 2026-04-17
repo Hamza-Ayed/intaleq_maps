@@ -5,8 +5,7 @@
 library intaleq_maps;
 
 // Re-export core MapLibre primitives under familiar names
-export 'package:maplibre_gl/maplibre_gl.dart'
-    show LatLng, LatLngBounds, CameraUpdate;
+export 'package:maplibre_gl/maplibre_gl.dart' show LatLng, LatLngBounds;
 
 // Public SDK surface
 export 'src/intaleq_map_widget.dart';

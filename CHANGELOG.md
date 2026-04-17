@@ -1,3 +1,9 @@
+## 2.1.2
+
+* Updated dependencies to latest stable versions (`http`, `lints`, `meta`).
+* Fixed `onCameraMoveStarted` not being triggered correctly.
+* Updated `README.md` to reflect the latest version.
+
 ## 2.1.1
 
 * Finalized static analysis and documentation fixes for maximum pub.dev score.

@@ -20,7 +20,7 @@ A **drop-in replacement for `google_maps_flutter`** backed by MapLibre GL, optim
 
 ```yaml
 dependencies:
-  intaleq_maps: ^2.0.0
+  intaleq_maps: ^2.1.2
 ```
 
 ---

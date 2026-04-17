@@ -128,6 +128,7 @@ class IntaleqMap extends StatefulWidget {
 
 class _IntaleqMapState extends State<IntaleqMap> {
   IntaleqMapController? _controller;
+  bool _isCameraMoving = false;
 
   @override
   void didUpdateWidget(IntaleqMap oldWidget) {
@@ -189,7 +190,10 @@ class _IntaleqMapState extends State<IntaleqMap> {
       onMapLongClick: widget.onLongPress != null
           ? (point, latlng) => widget.onLongPress!(latlng)
           : null,
-      onCameraIdle: widget.onCameraIdle,
+      onCameraIdle: () {
+        _isCameraMoving = false;
+        widget.onCameraIdle?.call();
+      },
       onCameraTrackingChanged: null,
       myLocationEnabled: widget.myLocationEnabled,
       myLocationRenderMode: widget.myLocationEnabled
@@ -208,10 +212,15 @@ class _IntaleqMapState extends State<IntaleqMap> {
       cameraTargetBounds: widget.cameraTargetBounds.bounds != null
           ? mgl.CameraTargetBounds(widget.cameraTargetBounds.bounds!)
           : mgl.CameraTargetBounds.unbounded,
-      trackCameraPosition: widget.onCameraMove != null,
-      onCameraMove: widget.onCameraMove != null
-          ? (pos) => widget.onCameraMove!(CameraPosition.fromMapLibre(pos))
-          : null,
+      trackCameraPosition:
+          widget.onCameraMove != null || widget.onCameraMoveStarted != null,
+      onCameraMove: (pos) {
+        if (!_isCameraMoving && widget.onCameraMoveStarted != null) {
+          _isCameraMoving = true;
+          widget.onCameraMoveStarted!();
+        }
+        widget.onCameraMove?.call(CameraPosition.fromMapLibre(pos));
+      },
       onCameraTrackingDismissed: null,
     );
   }

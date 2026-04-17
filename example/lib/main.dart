@@ -56,6 +56,9 @@ class _MapScreenState extends State<MapScreen> {
           zoom: 12,
         ),
         markers: _markers,
+        onCameraMoveStarted: () {
+          debugPrint('Camera movement started');
+        },
         onMapCreated: (controller) {
           setState(() {
             _controller = controller;

@@ -151,3 +151,61 @@ class CameraPosition {
   String toString() =>
       'CameraPosition(target: $target, zoom: $zoom, bearing: $bearing, tilt: $tilt)';
 }
+
+/// Defines a camera move.
+///
+/// This class mirrors `CameraUpdate` from `google_maps_flutter` but
+/// works with our custom [CameraPosition].
+class CameraUpdate {
+  CameraUpdate._(this._raw);
+  final mgl.CameraUpdate _raw;
+
+  /// Returns a [CameraUpdate] that moves the camera to the specified [position].
+  static CameraUpdate newCameraPosition(CameraPosition position) =>
+      CameraUpdate._(mgl.CameraUpdate.newCameraPosition(position.toMapLibre()));
+
+  /// Returns a [CameraUpdate] that moves the camera to the specified [latLng].
+  static CameraUpdate newLatLng(mgl.LatLng latLng) =>
+      CameraUpdate._(mgl.CameraUpdate.newLatLng(latLng));
+
+  /// Returns a [CameraUpdate] that moves the camera to the specified [bounds].
+  static CameraUpdate newLatLngBounds(
+    mgl.LatLngBounds bounds, {
+    double left = 0,
+    double top = 0,
+    double right = 0,
+    double bottom = 0,
+  }) =>
+      CameraUpdate._(mgl.CameraUpdate.newLatLngBounds(
+        bounds,
+        left: left,
+        top: top,
+        right: right,
+        bottom: bottom,
+      ));
+
+  /// Returns a [CameraUpdate] that moves the camera to the specified [latLng] and [zoom].
+  static CameraUpdate newLatLngZoom(mgl.LatLng latLng, double zoom) =>
+      CameraUpdate._(mgl.CameraUpdate.newLatLngZoom(latLng, zoom));
+
+  /// Returns a [CameraUpdate] that scrolls the camera by the specified pixels.
+  static CameraUpdate scrollBy(double dx, double dy) =>
+      CameraUpdate._(mgl.CameraUpdate.scrollBy(dx, dy));
+
+  /// Returns a [CameraUpdate] that zooms the camera by the specified amount.
+  static CameraUpdate zoomBy(double amount, [Offset? focus]) =>
+      CameraUpdate._(mgl.CameraUpdate.zoomBy(amount, focus));
+
+  /// Returns a [CameraUpdate] that zooms in the camera.
+  static CameraUpdate zoomIn() => CameraUpdate._(mgl.CameraUpdate.zoomIn());
+
+  /// Returns a [CameraUpdate] that zooms out the camera.
+  static CameraUpdate zoomOut() => CameraUpdate._(mgl.CameraUpdate.zoomOut());
+
+  /// Returns a [CameraUpdate] that zooms the camera to the specified [zoom] level.
+  static CameraUpdate zoomTo(double zoom) =>
+      CameraUpdate._(mgl.CameraUpdate.zoomTo(zoom));
+
+  /// Internal: Converts to MapLibre's [mgl.CameraUpdate].
+  mgl.CameraUpdate toMapLibre() => _raw;
+}

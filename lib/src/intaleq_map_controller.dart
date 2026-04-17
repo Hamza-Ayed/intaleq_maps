@@ -65,11 +65,11 @@ class IntaleqMapController {
   // ── Camera  (same API as GoogleMapController) ──────────────
 
   /// Animates the camera to the given [update].
-  Future<bool?> animateCamera(mgl.CameraUpdate update) =>
-      _raw.animateCamera(update);
+  Future<bool?> animateCamera(CameraUpdate update) =>
+      _raw.animateCamera(update.toMapLibre());
 
   /// Instantly moves the camera to the given [update].
-  Future<bool?> moveCamera(mgl.CameraUpdate update) => _raw.moveCamera(update);
+  Future<bool?> moveCamera(CameraUpdate update) => _raw.moveCamera(update.toMapLibre());
 
   /// Returns the current [CameraPosition] of the map.
   CameraPosition? get cameraPosition => _raw.cameraPosition != null

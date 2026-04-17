@@ -2,7 +2,7 @@ name: intaleq_maps
 description: >
   Premium Flutter SDK for the Intaleq Map Platform (Jordan & Syria).
   A drop-in Google Maps Flutter replacement backed by MapLibre GL.
-version: 2.1.1
+version: 2.1.2
 homepage: https://intaleqapp.com
 repository: https://github.com/Hamza-Ayed/intaleq_maps
 issue_tracker: https://github.com/Hamza-Ayed/intaleq_maps/issues
@@ -15,12 +15,12 @@ dependencies:
   flutter:
     sdk: flutter
   maplibre_gl: ^0.25.0
-  http: ^1.1.0
+  http: ^1.2.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  lints: ^2.1.0
+  lints: ^5.0.0
 
 flutter:
   uses-material-design: true

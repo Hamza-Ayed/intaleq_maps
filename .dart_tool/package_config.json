@@ -105,9 +105,9 @@
     },
     {
       "name": "lints",
-      "rootUri": "file:///Users/hamzaaleghwairyeen/.pub-cache/hosted/pub.dev/lints-2.1.1",
+      "rootUri": "file:///Users/hamzaaleghwairyeen/.pub-cache/hosted/pub.dev/lints-5.1.1",
       "packageUri": "lib/",
-      "languageVersion": "3.0"
+      "languageVersion": "3.6"
     },
     {
       "name": "maplibre_gl",
