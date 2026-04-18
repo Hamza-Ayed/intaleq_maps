@@ -20,7 +20,7 @@ A **drop-in replacement for `google_maps_flutter`** backed by MapLibre GL, optim
 
 ```yaml
 dependencies:
-  intaleq_maps: ^2.1.3
+  intaleq_maps: ^2.2.0
 ```
 
 ---
@@ -160,6 +160,7 @@ IntaleqMap(
 | `circles` | `Set<Circle>` | `{}` | Declarative circle set |
 | `polygons` | `Set<Polygon>` | `{}` | Declarative polygon set |
 | `onMapCreated` | `MapCreatedCallback?` | — | Fires once map is ready |
+| `onStyleLoaded` | `VoidCallback?` | — | Style fully loaded & ready for overlays |
 | `onTap` | `ArgumentCallback<LatLng>?` | — | Map tap |
 | `onLongPress` | `ArgumentCallback<LatLng>?` | — | Map long press |
 | `onCameraMove` | `CameraPositionCallback?` | — | Camera movement |
