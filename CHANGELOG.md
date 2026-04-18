@@ -1,3 +1,11 @@
+## 2.2.0
+
+* Added `onStyleLoaded` callback to `IntaleqMap` to handle style initialization.
+* Improved overlay persistence: Markers, Polylines, Circles, and Polygons are now automatically restored after style changes (e.g., toggling Dark Mode).
+* Exported MapLibre offline management primitives (`OfflineRegion`, `downloadOfflineRegion`, etc.) for advanced usage.
+* Exported `MyLocationRenderMode` and `MyLocationTrackingMode` for location UI customization.
+* Fixed `trackCameraPosition` logic to correctly trigger `onCameraIdle`.
+
 ## 2.1.3
 
 * Fixed missing `dart:ui` import in `types.dart`.

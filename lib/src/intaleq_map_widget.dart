@@ -40,9 +40,11 @@ class IntaleqMap extends StatefulWidget {
     this.polylines = const {},
     this.circles = const {},
     this.polygons = const {},
-    this.onMapCreated,
-    this.onTap,
+
     this.onLongPress,
+    this.onMapCreated,
+    this.onStyleLoaded,
+    this.onTap,
     this.onCameraMove,
     this.onCameraMoveStarted,
     this.onCameraIdle,
@@ -85,6 +87,9 @@ class IntaleqMap extends StatefulWidget {
 
   /// Called once the map is ready. Use [IntaleqMapController] for all operations.
   final MapCreatedCallback? onMapCreated;
+
+  /// Called once the map style is fully loaded and ready for overlays.
+  final VoidCallback? onStyleLoaded;
 
   // ── Interaction callbacks ──────────────────────────────────
 
@@ -178,12 +183,29 @@ class _IntaleqMapState extends State<IntaleqMap> {
 
   void _onLineTapped(mgl.Line line) => _controller?.onLineTapped(line);
 
+  Future<void> _onStyleLoaded() async {
+    final ctrl = _controller;
+    if (ctrl == null) return;
+
+    await ctrl.onStyleLoaded();
+    widget.onStyleLoaded?.call();
+
+    // Re-render everything from the current declarative sets.
+    // This ensures overlays persist across style changes (Dark/Light mode)
+    // and during certain zoom/camera events that trigger style reloads.
+    for (final m in widget.markers) await ctrl.addMarker(m);
+    for (final p in widget.polylines) await ctrl.addPolyline(p);
+    for (final c in widget.circles) await ctrl.addCircle(c);
+    for (final g in widget.polygons) await ctrl.addPolygon(g);
+  }
+
   @override
   Widget build(BuildContext context) {
     return mgl.MaplibreMap(
       styleString: _resolvedStyleUrl,
       initialCameraPosition: widget.initialCameraPosition.toMapLibre(),
       onMapCreated: _onMapCreated,
+      onStyleLoadedCallback: _onStyleLoaded,
       onMapClick: widget.onTap != null
           ? (point, latlng) => widget.onTap!(latlng)
           : null,
@@ -213,7 +235,9 @@ class _IntaleqMapState extends State<IntaleqMap> {
           ? mgl.CameraTargetBounds(widget.cameraTargetBounds.bounds!)
           : mgl.CameraTargetBounds.unbounded,
       trackCameraPosition:
-          widget.onCameraMove != null || widget.onCameraMoveStarted != null,
+          widget.onCameraMove != null ||
+              widget.onCameraMoveStarted != null ||
+              widget.onCameraIdle != null,
       onCameraMove: (pos) {
         if (!_isCameraMoving && widget.onCameraMoveStarted != null) {
           _isCameraMoving = true;

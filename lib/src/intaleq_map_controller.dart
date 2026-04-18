@@ -62,6 +62,20 @@ class IntaleqMapController {
     }
   }
 
+  /// Called by the widget when the map style has finished loading/reloading.
+  /// We clear internal registries because native objects (Symbols, Lines) 
+  /// are destroyed on style reload.
+  Future<void> onStyleLoaded() async {
+    _symbols.clear();
+    _symbolToMarker.clear();
+    _lines.clear();
+    _lineToPolyline.clear();
+    _circles.clear();
+    _fills.clear();
+    _loadedImages.clear();
+    await _registerDefaultImages();
+  }
+
   // ── Camera  (same API as GoogleMapController) ──────────────
 
   /// Animates the camera to the given [update].
@@ -94,8 +108,10 @@ class IntaleqMapController {
 
   /// Register a custom image into the map.
   /// Required before using [InlqBitmap.fromBytes] or custom style images.
-  Future<void> addImage(String imageId, Uint8List bytes) =>
-      _raw.addImage(imageId, bytes);
+  Future<void> addImage(String imageId, Uint8List bytes) async {
+    await _raw.addImage(imageId, bytes);
+    _loadedImages.add(imageId);
+  }
 
   // ── Markers ────────────────────────────────────────────────
 

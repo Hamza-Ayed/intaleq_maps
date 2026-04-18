@@ -5,7 +5,17 @@
 library intaleq_maps;
 
 // Re-export core MapLibre primitives under familiar names
-export 'package:maplibre_gl/maplibre_gl.dart' show LatLng, LatLngBounds;
+export 'package:maplibre_gl/maplibre_gl.dart'
+    show
+        LatLng,
+        LatLngBounds,
+        OfflineRegion,
+        OfflineRegionDefinition,
+        downloadOfflineRegion,
+        getListOfRegions,
+        deleteOfflineRegion,
+        MyLocationRenderMode,
+        MyLocationTrackingMode;
 
 // Public SDK surface
 export 'src/intaleq_map_widget.dart';
