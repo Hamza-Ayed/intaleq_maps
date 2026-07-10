@@ -197,6 +197,19 @@ class Marker {
       draggable: draggable,
       zIndex: zIndex.toInt(),
       textField: infoWindow.title,
+      textAnchor: 'bottom',
+      textOffset: const Offset(0, -3.0),
+      textSize: 12.0,
+      textColor: (infoWindow.snippet != null && 
+                 (infoWindow.snippet == 'start' || 
+                  infoWindow.snippet == 'end' || 
+                  infoWindow.snippet!.startsWith('stop_'))) ? '#FFFFFF' : '#000000',
+      textHaloColor: infoWindow.snippet == 'start' ? '#4CAF50' 
+          : (infoWindow.snippet == 'end' ? '#F44336' 
+          : (infoWindow.snippet == 'stop_0' ? '#FF9800' // Orange
+          : (infoWindow.snippet == 'stop_1' ? '#9C27B0' // Purple
+          : '#FFFFFF'))),
+      textHaloWidth: 3.0,
       // The bundled Intaleq styles serve glyphs from a host that only carries
       // Noto Sans. Without an explicit font, the annotation layer falls back to
       // "Open Sans Regular, Arial Unicode MS Regular"; that glyph request 404s
@@ -306,14 +319,14 @@ class Polyline {
     );
   }
 
-  /// Internal: converts to MapLibre LineOptions.
+/// Internal: converts to MapLibre LineOptions.
   mgl.LineOptions toLineOptions() {
     return mgl.LineOptions(
       geometry: points,
       lineColor: _colorToHex(color),
-      lineWidth: width,
-      lineOpacity: visible ? 1.0 : 0.0, // Forced to 1.0 to ensure visibility
+      lineWidth: width < 5.0 ? 5.0 : width,
       lineJoin: 'round',
+      lineOpacity: 0.85,
     );
   }
 
@@ -575,8 +588,7 @@ String _colorToHex(Color color) {
 // ─────────────────────────────────────────────────────────────
 
 bool _latLngEquals(mgl.LatLng a, mgl.LatLng b) =>
-    identical(a, b) ||
-    (a.latitude == b.latitude && a.longitude == b.longitude);
+    identical(a, b) || (a.latitude == b.latitude && a.longitude == b.longitude);
 
 int _latLngHash(mgl.LatLng p) => Object.hash(p.latitude, p.longitude);
 
@@ -589,8 +601,7 @@ bool _latLngListEquals(List<mgl.LatLng> a, List<mgl.LatLng> b) {
   return true;
 }
 
-bool _latLngListListEquals(
-    List<List<mgl.LatLng>> a, List<List<mgl.LatLng>> b) {
+bool _latLngListListEquals(List<List<mgl.LatLng>> a, List<List<mgl.LatLng>> b) {
   if (identical(a, b)) return true;
   if (a.length != b.length) return false;
   for (var i = 0; i < a.length; i++) {
