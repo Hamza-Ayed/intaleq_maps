@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:maplibre_gl/maplibre_gl.dart' as mgl;
 import 'intaleq_map_controller.dart';
 import 'styles.dart';
+import 'offline_service.dart';
 import 'models/geometry.dart';
 import 'models/types.dart';
 
@@ -56,6 +58,7 @@ class IntaleqMap extends StatefulWidget {
     this.scrollGesturesEnabled = true,
     this.tiltGesturesEnabled = true,
     this.zoomGesturesEnabled = true,
+    this.autoCache = true,
     this.minMaxZoomPreference = MinMaxZoomPreference.unbounded,
     this.cameraTargetBounds = CameraTargetBounds.unbounded,
   });
@@ -76,6 +79,9 @@ class IntaleqMap extends StatefulWidget {
   /// Override with a custom MapLibre style URL.
   final String? styleUrl;
 
+  /// Automatically download tiles around the camera center when idle.
+  final bool autoCache;
+
   // ── Overlays (declarative — mirrors GoogleMap) ─────────────
 
   final Set<Marker> markers;
@@ -88,8 +94,9 @@ class IntaleqMap extends StatefulWidget {
   /// Called once the map is ready. Use [IntaleqMapController] for all operations.
   final MapCreatedCallback? onMapCreated;
 
-  /// Called once the map style is fully loaded and ready for overlays.
-  final VoidCallback? onStyleLoaded;
+  /// Note: If this callback returns a Future, the widget will await it before
+  /// adding declarative markers and polylines.
+  final Function()? onStyleLoaded;
 
   // ── Interaction callbacks ──────────────────────────────────
 
@@ -134,10 +141,47 @@ class IntaleqMap extends StatefulWidget {
 class _IntaleqMapState extends State<IntaleqMap> {
   IntaleqMapController? _controller;
   bool _isCameraMoving = false;
+  String? _styleString;
+  bool _isLoadingStyle = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStyle();
+  }
+
+  Future<void> _loadStyle() async {
+    try {
+      final url = _resolvedStyleUrl;
+      print("🔥 [IntaleqMap] Resolving style: $url");
+
+      if (url.startsWith('asset://')) {
+        final assetPath = url.replaceFirst('asset://', '');
+        _styleString = await rootBundle.loadString(assetPath);
+        print("🔥 [IntaleqMap] Style loaded from asset string: ${assetPath.split('/').last}");
+      } else {
+        _styleString = url;
+        print("🔥 [IntaleqMap] Using remote style URL: $url");
+      }
+    } catch (e) {
+      print("❌ [IntaleqMap] Failed to load style: $e");
+      _styleString = 'about:blank';
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingStyle = false);
+      }
+    }
+  }
 
   @override
   void didUpdateWidget(IntaleqMap oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.mapType != widget.mapType ||
+        oldWidget.styleUrl != widget.styleUrl) {
+      _loadStyle();
+    }
+
     final ctrl = _controller;
     if (ctrl == null) return;
 
@@ -150,9 +194,10 @@ class _IntaleqMapState extends State<IntaleqMap> {
 
   String get _resolvedStyleUrl {
     if (widget.styleUrl != null) return widget.styleUrl!;
+    // Default to local assets for performance and offline support
     return switch (widget.mapType) {
-      IntaleqMapType.normal => IntaleqStyles.obsidian(widget.apiKey),
-      IntaleqMapType.light => IntaleqStyles.light(widget.apiKey),
+      IntaleqMapType.normal => 'asset://packages/intaleq_maps/assets/style_dark.json',
+      IntaleqMapType.light => 'asset://packages/intaleq_maps/assets/style.json',
       IntaleqMapType.satellite => IntaleqStyles.satellite(widget.apiKey),
       IntaleqMapType.none => 'about:blank',
     };
@@ -168,13 +213,6 @@ class _IntaleqMapState extends State<IntaleqMap> {
       apiKey: widget.apiKey,
     );
     _controller = ctrl;
-
-    // Render the initial overlay sets.
-    for (final m in widget.markers) await ctrl.addMarker(m);
-    for (final p in widget.polylines) await ctrl.addPolyline(p);
-    for (final c in widget.circles) await ctrl.addCircle(c);
-    for (final g in widget.polygons) await ctrl.addPolygon(g);
-
     widget.onMapCreated?.call(ctrl);
   }
 
@@ -188,7 +226,10 @@ class _IntaleqMapState extends State<IntaleqMap> {
     if (ctrl == null) return;
 
     await ctrl.onStyleLoaded();
-    widget.onStyleLoaded?.call();
+    final callbackResult = widget.onStyleLoaded?.call();
+    if (callbackResult is Future) {
+      await callbackResult;
+    }
 
     // Re-render everything from the current declarative sets.
     // This ensures overlays persist across style changes (Dark/Light mode)
@@ -197,12 +238,19 @@ class _IntaleqMapState extends State<IntaleqMap> {
     for (final p in widget.polylines) await ctrl.addPolyline(p);
     for (final c in widget.circles) await ctrl.addCircle(c);
     for (final g in widget.polygons) await ctrl.addPolygon(g);
+    
+    // Apply defaults AFTER markers have initialized the symbol layer
+    await ctrl.applyMarkerVisibilityDefaults();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoadingStyle) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return mgl.MaplibreMap(
-      styleString: _resolvedStyleUrl,
+      styleString: _styleString!,
       initialCameraPosition: widget.initialCameraPosition.toMapLibre(),
       onMapCreated: _onMapCreated,
       onStyleLoadedCallback: _onStyleLoaded,
@@ -214,6 +262,15 @@ class _IntaleqMapState extends State<IntaleqMap> {
           : null,
       onCameraIdle: () {
         _isCameraMoving = false;
+        if (widget.autoCache) {
+          final pos = _controller?.cameraPosition;
+          if (pos != null) {
+            IntaleqOfflineService.instance.downloadRegion(
+              pos.target,
+              styleUrl: _resolvedStyleUrl,
+            );
+          }
+        }
         widget.onCameraIdle?.call();
       },
       onCameraTrackingChanged: null,

@@ -19,4 +19,10 @@ class IntaleqStyles {
   /// High-resolution satellite tiles overlaid with Intaleq vector labels.
   static String satellite(String apiKey) =>
       'https://map-saas.intaleqapp.com/api/maps/style.json?theme=satellite&api_key=$apiKey';
+
+  /// Path to the local light style asset.
+  static const String localLight = 'assets/style.json';
+
+  /// Path to the local dark style asset.
+  static const String localDark = 'assets/style_dark.json';
 }

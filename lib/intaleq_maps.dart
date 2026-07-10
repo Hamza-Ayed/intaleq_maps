@@ -21,6 +21,7 @@ export 'package:maplibre_gl/maplibre_gl.dart'
 export 'src/intaleq_map_widget.dart';
 export 'src/intaleq_map_controller.dart';
 export 'src/styles.dart';
+export 'src/offline_service.dart';
 export 'src/constants/colors.dart';
 export 'src/utils/polyline_utils.dart';
 

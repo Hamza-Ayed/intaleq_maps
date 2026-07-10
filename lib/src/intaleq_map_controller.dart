@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
+import 'dart:ui';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
 import 'package:maplibre_gl/maplibre_gl.dart' as mgl;
@@ -40,6 +41,14 @@ class IntaleqMapController {
   /// Maps our [PolygonId] → live MapLibre [mgl.Fill].
   final Map<PolygonId, mgl.Fill> _fills = {};
 
+  /// A single, imperatively-managed "user location" symbol (the moving puck).
+  /// Kept OUT of the declarative [Marker] sets so it can be updated on every
+  /// GPS / animation tick without rebuilding the widget tree — see
+  /// [setUserMarker]. Reset to null on style reload (native symbol is
+  /// destroyed) so the next update re-adds it.
+  mgl.Symbol? _userSymbol;
+  bool _userSymbolBusy = false;
+
   // ── Factory / init ─────────────────────────────────────────
 
   static Future<IntaleqMapController> create({
@@ -63,7 +72,7 @@ class IntaleqMapController {
   }
 
   /// Called by the widget when the map style has finished loading/reloading.
-  /// We clear internal registries because native objects (Symbols, Lines) 
+  /// We clear internal registries because native objects (Symbols, Lines)
   /// are destroyed on style reload.
   Future<void> onStyleLoaded() async {
     _symbols.clear();
@@ -73,7 +82,33 @@ class IntaleqMapController {
     _circles.clear();
     _fills.clear();
     _loadedImages.clear();
+    // The user-location symbol is destroyed with the old style; forget the
+    // stale handle so the next [setUserMarker] call re-creates it.
+    _userSymbol = null;
     await _registerDefaultImages();
+  }
+
+  /// Google Maps draws every marker unconditionally, but MapLibre's symbol
+  /// layer defaults to `icon-allow-overlap = false`, so custom markers get
+  /// collision-culled against the basemap's place labels and silently vanish.
+  ///
+  /// To match `GoogleMap` semantics (this SDK is a drop-in replacement) we opt
+  /// marker *icons* out of collision. The symbol manager is created before
+  /// `onStyleLoadedCallback` fires, so applying this here — before any markers
+  /// are (re)added on style load — makes pins reliably visible and keeps them
+  /// visible across dark/light style reloads.
+  ///
+  /// Only the icon is forced to always draw; the optional info-window text is
+  /// left collision-managed so a marker whose artwork already contains a label
+  /// (e.g. the A/B route pins) doesn't render a duplicate text glyph on top.
+  Future<void> applyMarkerVisibilityDefaults() async {
+    try {
+      await _raw.setSymbolIconAllowOverlap(true);
+      await _raw.setSymbolIconIgnorePlacement(true);
+    } catch (_) {
+      // Symbol manager not ready yet — safe to ignore; defaults reapply on the
+      // next style load.
+    }
   }
 
   // ── Camera  (same API as GoogleMapController) ──────────────
@@ -83,7 +118,8 @@ class IntaleqMapController {
       _raw.animateCamera(update.toMapLibre());
 
   /// Instantly moves the camera to the given [update].
-  Future<bool?> moveCamera(CameraUpdate update) => _raw.moveCamera(update.toMapLibre());
+  Future<bool?> moveCamera(CameraUpdate update) =>
+      _raw.moveCamera(update.toMapLibre());
 
   /// Returns the current [CameraPosition] of the map.
   CameraPosition? get cameraPosition => _raw.cameraPosition != null
@@ -113,14 +149,15 @@ class IntaleqMapController {
     _loadedImages.add(imageId);
   }
 
-  // ── Markers ────────────────────────────────────────────────
-
   /// Adds a single [Marker] to the map and returns its MapLibre handle.
   Future<mgl.Symbol> addMarker(Marker marker) async {
-    await _loadBitmapIfNeeded(marker.icon);
     final symbol = await _raw.addSymbol(marker.toSymbolOptions());
     _symbols[marker.markerId] = symbol;
     _symbolToMarker[symbol.id] = marker;
+
+    // Ensure collision defaults apply (symbol layer is created lazily by MapLibre)
+    await applyMarkerVisibilityDefaults();
+
     return symbol;
   }
 
@@ -137,6 +174,44 @@ class IntaleqMapController {
     final symbol = _symbols.remove(id);
     if (symbol == null) return;
     _symbolToMarker.remove(symbol.id);
+    await _raw.removeSymbol(symbol);
+  }
+
+  // ── User-location puck (imperative, high-frequency) ────────
+
+  /// Places or moves the single "user location" puck.
+  ///
+  /// Unlike the declarative [markers] set, this updates one native symbol
+  /// in place — the correct pattern for a marker that moves on every GPS or
+  /// animation frame (a vehicle/heading puck). It avoids rebuilding the
+  /// Flutter tree and the whole-set diff, which otherwise makes a
+  /// continuously-moving marker flicker or disappear.
+  ///
+  /// Safe to call at up to display refresh rate: overlapping calls are
+  /// coalesced (a call that arrives while another is still in flight is
+  /// dropped, and the next tick supplies fresh coordinates). The puck is
+  /// re-created automatically after a style reload.
+  Future<void> setUserMarker(Marker marker) async {
+    if (_userSymbolBusy) return;
+    _userSymbolBusy = true;
+    try {
+      await _loadBitmapIfNeeded(marker.icon);
+      final symbol = _userSymbol;
+      if (symbol == null) {
+        _userSymbol = await _raw.addSymbol(marker.toSymbolOptions());
+      } else {
+        await _raw.updateSymbol(symbol, marker.toSymbolOptions());
+      }
+    } finally {
+      _userSymbolBusy = false;
+    }
+  }
+
+  /// Removes the user-location puck, if present.
+  Future<void> clearUserMarker() async {
+    final symbol = _userSymbol;
+    if (symbol == null) return;
+    _userSymbol = null;
     await _raw.removeSymbol(symbol);
   }
 
@@ -339,11 +414,13 @@ class IntaleqMapController {
   /// Fetches a route between [origin] and [destination].
   ///
   /// [profile] is one of: `driving`, `cycling`, `walking`.
+  /// [steps] when true, returns turn-by-turn navigation steps.
   /// Returns the raw Intaleq Routing API response.
   Future<Map<String, dynamic>> getDirections(
     mgl.LatLng origin,
     mgl.LatLng destination, {
     String profile = 'driving',
+    bool steps = true,
   }) async {
     final uri = Uri.https('map-saas.intaleqapp.com', '/api/maps/route', {
       'fromLat': origin.latitude.toString(),
@@ -351,12 +428,49 @@ class IntaleqMapController {
       'toLat': destination.latitude.toString(),
       'toLng': destination.longitude.toString(),
       'profile': profile,
+      'steps': steps.toString(),
       'api_key': _apiKey,
     });
     final res = await http.get(uri);
     if (res.statusCode == 200)
       return jsonDecode(res.body) as Map<String, dynamic>;
     throw Exception('Routing request failed: ${res.statusCode}');
+  }
+
+  /// High-level helper to fetch and draw a route on the map.
+  ///
+  /// Returns the [PolylineId] of the drawn route, or null if it failed.
+  Future<PolylineId?> drawRoute({
+    required mgl.LatLng origin,
+    required mgl.LatLng destination,
+    String profile = 'driving',
+    Color color = const Color(0xFF2196F3),
+    double width = 5.0,
+  }) async {
+    try {
+      final data = await getDirections(origin, destination, profile: profile);
+      if (data['status'] == 'success' && data['data'] != null) {
+        final List<dynamic> points = data['data']['points'];
+        final List<mgl.LatLng> path = points
+            .map((p) => mgl.LatLng(p['lat'] as double, p['lng'] as double))
+            .toList();
+
+        final polylineId =
+            PolylineId('route_${DateTime.now().millisecondsSinceEpoch}');
+        final polyline = Polyline(
+          polylineId: polylineId,
+          points: path,
+          color: color,
+          width: width,
+        );
+
+        await addPolyline(polyline);
+        return polylineId;
+      }
+    } catch (e) {
+      print('IntaleqMapController.drawRoute error: $e');
+    }
+    return null;
   }
 
   // ── Bitmap loader helper ───────────────────────────────────

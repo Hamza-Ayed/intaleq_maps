@@ -197,6 +197,11 @@ class Marker {
       draggable: draggable,
       zIndex: zIndex.toInt(),
       textField: infoWindow.title,
+      // The bundled Intaleq styles serve glyphs from a host that only carries
+      // Noto Sans. Without an explicit font, the annotation layer falls back to
+      // "Open Sans Regular, Arial Unicode MS Regular"; that glyph request 404s
+      // and MapLibre then drops the entire symbol — icon included — on iOS.
+      fontNames: infoWindow.title != null ? const ['Noto Sans Regular'] : null,
     );
   }
 
@@ -210,9 +215,33 @@ class Marker {
   }
 
   @override
-  bool operator ==(Object o) => o is Marker && o.markerId == markerId;
+  bool operator ==(Object o) =>
+      o is Marker &&
+      o.markerId == markerId &&
+      _latLngEquals(o.position, position) &&
+      o.alpha == alpha &&
+      o.anchor == anchor &&
+      o.draggable == draggable &&
+      o.flat == flat &&
+      o.icon == icon &&
+      o.infoWindow == infoWindow &&
+      o.rotation == rotation &&
+      o.visible == visible &&
+      o.zIndex == zIndex;
   @override
-  int get hashCode => markerId.hashCode;
+  int get hashCode => Object.hash(
+        markerId,
+        _latLngHash(position),
+        alpha,
+        anchor,
+        draggable,
+        flat,
+        icon,
+        infoWindow,
+        rotation,
+        visible,
+        zIndex,
+      );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -226,7 +255,7 @@ class Polyline {
     required this.polylineId,
     required this.points,
     this.color = const Color(0xFF0D47A1),
-    this.width = 5,
+    this.width = 5.0,
     this.visible = true,
     this.zIndex = 0,
     this.geodesic = false,
@@ -243,7 +272,7 @@ class Polyline {
   final Color color;
 
   /// Line stroke width in screen pixels.
-  final int width;
+  final double width;
 
   /// Whether the polyline is visible on the map.
   final bool visible;
@@ -259,7 +288,7 @@ class Polyline {
   Polyline copyWith({
     List<mgl.LatLng>? points,
     Color? color,
-    int? width,
+    double? width,
     bool? visible,
     int? zIndex,
     bool? geodesic,
@@ -282,16 +311,32 @@ class Polyline {
     return mgl.LineOptions(
       geometry: points,
       lineColor: _colorToHex(color),
-      lineWidth: width.toDouble(),
-      lineOpacity: visible ? color.a : 0.0,
+      lineWidth: width,
+      lineOpacity: visible ? 1.0 : 0.0, // Forced to 1.0 to ensure visibility
       lineJoin: 'round',
     );
   }
 
   @override
-  bool operator ==(Object o) => o is Polyline && o.polylineId == polylineId;
+  bool operator ==(Object o) =>
+      o is Polyline &&
+      o.polylineId == polylineId &&
+      o.color == color &&
+      o.width == width &&
+      o.visible == visible &&
+      o.zIndex == zIndex &&
+      o.geodesic == geodesic &&
+      _latLngListEquals(o.points, points);
   @override
-  int get hashCode => polylineId.hashCode;
+  int get hashCode => Object.hash(
+        polylineId,
+        color,
+        width,
+        visible,
+        zIndex,
+        geodesic,
+        Object.hashAll(points.map(_latLngHash)),
+      );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -307,7 +352,7 @@ class Circle {
     required this.radius,
     this.fillColor = const Color(0x1A0D47A1),
     this.strokeColor = const Color(0xFF0D47A1),
-    this.strokeWidth = 2,
+    this.strokeWidth = 2.0,
     this.visible = true,
     this.zIndex = 0,
     this.onTap,
@@ -329,7 +374,7 @@ class Circle {
   final Color strokeColor;
 
   /// Stroke width in pixels.
-  final int strokeWidth;
+  final double strokeWidth;
 
   final bool visible;
   final int zIndex;
@@ -342,7 +387,7 @@ class Circle {
     double? radius,
     Color? fillColor,
     Color? strokeColor,
-    int? strokeWidth,
+    double? strokeWidth,
     bool? visible,
     int? zIndex,
     VoidCallback? onTap,
@@ -371,15 +416,33 @@ class Circle {
       circleColor: _colorToHex(fillColor),
       circleOpacity: visible ? fillColor.a : 0.0,
       circleStrokeColor: _colorToHex(strokeColor),
-      circleStrokeWidth: strokeWidth.toDouble(),
+      circleStrokeWidth: strokeWidth,
       circleStrokeOpacity: visible ? strokeColor.a : 0.0,
     );
   }
 
   @override
-  bool operator ==(Object o) => o is Circle && o.circleId == circleId;
+  bool operator ==(Object o) =>
+      o is Circle &&
+      o.circleId == circleId &&
+      _latLngEquals(o.center, center) &&
+      o.radius == radius &&
+      o.fillColor == fillColor &&
+      o.strokeColor == strokeColor &&
+      o.strokeWidth == strokeWidth &&
+      o.visible == visible &&
+      o.zIndex == zIndex;
   @override
-  int get hashCode => circleId.hashCode;
+  int get hashCode => Object.hash(
+        circleId,
+        _latLngHash(center),
+        radius,
+        fillColor,
+        strokeColor,
+        strokeWidth,
+        visible,
+        zIndex,
+      );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -395,7 +458,7 @@ class Polygon {
     this.holes = const [],
     this.fillColor = const Color(0x1ABDBDBD),
     this.strokeColor = const Color(0xFF0D47A1),
-    this.strokeWidth = 2,
+    this.strokeWidth = 2.0,
     this.visible = true,
     this.zIndex = 0,
     this.geodesic = false,
@@ -418,7 +481,7 @@ class Polygon {
   final Color strokeColor;
 
   /// Outline stroke width in pixels.
-  final int strokeWidth;
+  final double strokeWidth;
 
   final bool visible;
   final int zIndex;
@@ -432,7 +495,7 @@ class Polygon {
     List<List<mgl.LatLng>>? holes,
     Color? fillColor,
     Color? strokeColor,
-    int? strokeWidth,
+    double? strokeWidth,
     bool? visible,
     int? zIndex,
     bool? geodesic,
@@ -465,9 +528,28 @@ class Polygon {
   }
 
   @override
-  bool operator ==(Object o) => o is Polygon && o.polygonId == polygonId;
+  bool operator ==(Object o) =>
+      o is Polygon &&
+      o.polygonId == polygonId &&
+      o.fillColor == fillColor &&
+      o.strokeColor == strokeColor &&
+      o.strokeWidth == strokeWidth &&
+      o.visible == visible &&
+      o.zIndex == zIndex &&
+      o.geodesic == geodesic &&
+      _latLngListEquals(o.points, points) &&
+      _latLngListListEquals(o.holes, holes);
   @override
-  int get hashCode => polygonId.hashCode;
+  int get hashCode => Object.hash(
+        polygonId,
+        fillColor,
+        strokeColor,
+        strokeWidth,
+        visible,
+        zIndex,
+        geodesic,
+        Object.hashAll(points.map(_latLngHash)),
+      );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -476,7 +558,43 @@ class Polygon {
 
 /// Converts a Flutter [Color] to a CSS hex string (e.g. '#0D47A1').
 String _colorToHex(Color color) {
-  return '#${(color.r * 255).round().toRadixString(16).padLeft(2, '0')}'
-      '${(color.g * 255).round().toRadixString(16).padLeft(2, '0')}'
-      '${(color.b * 255).round().toRadixString(16).padLeft(2, '0')}';
+  return '#${color.red.toRadixString(16).padLeft(2, '0')}'
+      '${color.green.toRadixString(16).padLeft(2, '0')}'
+      '${color.blue.toRadixString(16).padLeft(2, '0')}';
+}
+
+// ─────────────────────────────────────────────────────────────
+// LatLng value equality
+//
+// mgl.LatLng does not override == / hashCode, so two coordinates
+// with identical lat/lng are NOT equal by default (identity only).
+// Geometry classes (Marker/Polyline/Circle/Polygon) need real
+// content equality so that diffMarkers/diffPolylines/etc. can tell
+// apart "same shape, unchanged" from "same id, moved/redrawn" —
+// otherwise in-place updates are silently skipped.
+// ─────────────────────────────────────────────────────────────
+
+bool _latLngEquals(mgl.LatLng a, mgl.LatLng b) =>
+    identical(a, b) ||
+    (a.latitude == b.latitude && a.longitude == b.longitude);
+
+int _latLngHash(mgl.LatLng p) => Object.hash(p.latitude, p.longitude);
+
+bool _latLngListEquals(List<mgl.LatLng> a, List<mgl.LatLng> b) {
+  if (identical(a, b)) return true;
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (!_latLngEquals(a[i], b[i])) return false;
+  }
+  return true;
+}
+
+bool _latLngListListEquals(
+    List<List<mgl.LatLng>> a, List<List<mgl.LatLng>> b) {
+  if (identical(a, b)) return true;
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (!_latLngListEquals(a[i], b[i])) return false;
+  }
+  return true;
 }
