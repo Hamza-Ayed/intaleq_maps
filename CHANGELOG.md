@@ -1,3 +1,23 @@
+## 2.3.0
+
+* Refreshed bundled `assets/style.json` (offline fallback) to match the live server style:
+  slate-on-sand road palette, per-class zoom thresholds (fixes low-zoom street clutter),
+  building layer ordering fix (labels/icons no longer hidden under building fills),
+  bridge rendering, seasonal/intermittent waterway styling, expanded POI categories
+  (shop, bank, fuel, hotel, police), and OSM-Carto-style landuse tinting
+  (retail/farmland/forest/grass/power).
+* Removed the broken `demotiles.maplibre.org` sprite reference from the bundled style —
+  apps must now supply POI icons via `onStyleLoaded` + `styleimagemissing` (see
+  `apps/web/src/utils/mapIcons.ts` in the monorepo for the reference implementation).
+  Without this, icon-based layers (POIs, direction arrows) render with empty icons.
+* Note: this only updates the **local/offline** style asset. The primary runtime path
+  (`IntaleqStyles.light/obsidian`) already served the corrected style live via
+  `/api/maps/style.json` as of 2026-07-31 — no server change needed for those.
+
+## 2.2.1
+
+* Fixed Polyline and Marker comparison/equality checks.
+
 ## 2.2.0
 
 * Added `onStyleLoaded` callback to `IntaleqMap` to handle style initialization.
